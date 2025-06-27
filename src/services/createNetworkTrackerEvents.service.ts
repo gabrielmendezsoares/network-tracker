@@ -1,7 +1,7 @@
 import momentTimezone from 'moment-timezone';
 import ping from 'ping';
 import { PrismaClient } from '@prisma/client/storage/client.js';
-import { IEventDecisionMap, INetworkTrackerHost } from '../interfaces/index.js';
+import { IEventDecisionMap, INetworkTrackerHost } from './interfaces/index.js';
 
 const GOOGLE_PING_TIMEOUT = 8;
 const NETWORK_TRACKER_HOST_PING_TIMEOUT = 8;
@@ -34,7 +34,7 @@ const performPingWithRetries = async (
         return true;
       }
     } catch (error: unknown) {
-      console.log(`Error | Timestamp: ${momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss')} | Path: src/routes/createNetworkTrackerEvents.service.ts | Location: performPingWithRetries | Error: ${ error instanceof Error ? error.message : String(error) }`);
+      console.log(`Error | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Path: src/routes/createNetworkTrackerEvents.service.ts | Location: performPingWithRetries | Error: ${ error instanceof Error ? error.message : String(error) }`);
     }
     
     if (attempt < retries) {

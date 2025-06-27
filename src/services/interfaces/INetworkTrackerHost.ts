@@ -1,10 +1,8 @@
 export interface INetworkTrackerHost {
   id: number;
   ip: string;
-  account: string;
-  company_id: number;
-  partition: string;
-  zone: string;
+  account_id: string;
+  zone_id: string;
   consecutive_successes: number;
   consecutive_failures: number;
   is_alive: boolean;
