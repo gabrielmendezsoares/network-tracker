@@ -1,10 +1,9 @@
 import momentTimezone from 'moment-timezone';
 import { PrismaClient } from '@prisma/client/storage/client.js';
 import { HttpClientUtil, BearerStrategy } from '../../expressium/src/index.js';
-import { INetworkTrackerEvent } from '../interfaces/index.js';
+import { IAccountMap, IEventPayloadMap, INetworkTrackerEvent, IPartitionMap, IZoneMap } from './interfaces/index.js';
 
 const EVENT_ID = '167617000';
-const COMPLEMENT = 'INTERNET';
 const PROTOCOL_TYPE = 'CONTACT_ID';
 
 const prisma = new PrismaClient();
@@ -12,28 +11,52 @@ const prisma = new PrismaClient();
 export const sendNetworkTrackerEvents = async (): Promise<void> => {
   try {
     const networkTrackerEventList = await prisma.network_tracker_events.findMany({ where: { status: 'pending' } });
-    const eventIdList: number[] = [];
-    const eventPayloadList: any[] = [];
+    const eventPayloadMapList: IEventPayloadMap.IEventPayloadMap[] = [];
+    const eventIdSuccessList: number[] = [];
+    const eventIdErrorList: number[] = [];
 
     await Promise.allSettled(
-      networkTrackerEventList.map(
+      networkTrackerEventList.forEach(
         async (networkTrackerEvent: INetworkTrackerEvent.INetworkTrackerEvent): Promise<void> => {
           const networkTrackerHost = await prisma.network_tracker_hosts.findUnique({ where: { id: networkTrackerEvent.host_id } });
 
           if (networkTrackerHost) {
-            eventIdList.push(networkTrackerEvent.id);
+            const httpClientInstance = new HttpClientUtil.HttpClient();
 
-            eventPayloadList.push(
+            httpClientInstance.setAuthenticationStrategy(new BearerStrategy.BearerStrategy(process.env.SIGMA_CLOUD_BEARER_TOKEN as string));
+        
+            const accountMap = (await httpClientInstance.get<IAccountMap.IAccountMap>(`https://api.segware.com.br/v5/accounts/${ networkTrackerHost.account_id }`)).data;
+
+            if (!accountMap) {
+              eventIdErrorList.push(networkTrackerEvent.id);
+
+              return;
+            }
+
+            const partitionMap = accountMap.partitions.find((partitionMap: IPartitionMap.IPartitionMap): boolean => partitionMap.id === Number(networkTrackerHost.partition_id));
+        
+            if (!partitionMap) {
+              eventIdErrorList.push(networkTrackerEvent.id);
+
+              return;
+            }
+
+            const zoneMapList = (await httpClientInstance.get<IZoneMap.IZoneMap[]>(`https://api.segware.com.br/v2/accounts/${ networkTrackerHost.account_id }/zones`)).data;
+            const zoneMap = zoneMapList.find((zoneMap: IZoneMap.IZoneMap): boolean => zoneMap.partition.id === Number(networkTrackerHost.partition_id));
+
+            eventIdSuccessList.push(networkTrackerEvent.id);
+
+            eventPayloadMapList.push(
               {
-                account: networkTrackerHost.account,
-                auxiliary: networkTrackerHost.zone,
+                account: accountMap.accountCode,
+                auxiliary: zoneMap.zoneCode || '100',
                 code: networkTrackerEvent.code,
-                companyId: networkTrackerHost.company_id,
-                complement: COMPLEMENT,
+                companyId: accountMap.companyId,
+                complement: `IP do Host: ${ networkTrackerHost.ip }, Descrição do Host: ${ networkTrackerHost.description }`,
                 dateTime: networkTrackerEvent.created_at.toISOString().slice(0, 19).replace('T', ' ').replace(/-/g, '-'),
                 eventId: EVENT_ID,
-                eventLog: `Company ID: ${ networkTrackerHost.company_id }, IP: ${ networkTrackerHost.ip }`,
-                partition: networkTrackerHost.partition,
+                eventLog: `IP do Host: ${ networkTrackerHost.ip }, Descrição do Host: ${ networkTrackerHost.description }`,
+                partition: partitionMap.number,
                 protocolType: PROTOCOL_TYPE
               }
             );
@@ -42,19 +65,28 @@ export const sendNetworkTrackerEvents = async (): Promise<void> => {
       )
     );
   
-    if (eventIdList.length > 0) {
+    if (eventIdSuccessList.length > 0 || eventIdErrorList.length > 0) {
       const httpClientInstance = new HttpClientUtil.HttpClient();
   
       httpClientInstance.setAuthenticationStrategy(new BearerStrategy.BearerStrategy(process.env.SIGMA_CLOUD_BEARER_TOKEN as string));
     
-      await httpClientInstance.post<unknown>('https://api.segware.com.br/v3/events/alarm', { events: eventPayloadList });
-  
-      await prisma.network_tracker_events.updateMany(
-        {
-          where: { id: { in: eventIdList } },
-          data: { status: 'sent' }
-        }
-      );
+      if (eventIdSuccessList.length > 0) {
+        await httpClientInstance.post<unknown>('https://api.segware.com.br/v3/events/alarm', { events: eventPayloadMapList });
+    
+        await prisma.network_tracker_events.updateMany(
+          {
+            where: { id: { in: eventIdSuccessList } },
+            data: { status: 'sent' }
+          }
+        );
+      } else if (eventIdErrorList.length > 0) {
+        await prisma.network_tracker_events.updateMany(
+          {
+            where: { id: { in: eventIdErrorList } },
+            data: { status: 'failed' }
+          }
+        );
+      }
     }
   } catch (error: unknown) {
     console.log(`Error | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Path: src/routes/sendNetworkTrackerEvents.service.ts | Location: sendNetworkTrackerEvents | Error: ${ error instanceof Error ? error.message : String(error) }`);

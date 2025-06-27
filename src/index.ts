@@ -8,6 +8,18 @@ import { createNetworkTrackerEventsService, sendNetworkTrackerEventsService } fr
 const NETWORK_TRACKER_CREATE_NETWORK_TRACKER_EVENTS_INTERVAL = 60_000;
 const NETWORK_TRACKER_SEND_NETWORK_TRACKER_EVENTS_INTERVAL = 60_000;
 
+const createSequentialInterval = async (
+  handler: () => Promise<void>, 
+  interval: number
+): Promise<void> => {
+  const executeWithDelay = async (): Promise<void> => {
+    await handler();
+    setTimeout(executeWithDelay, interval).unref();
+  };
+
+  executeWithDelay();
+};
+
 const buildServer = async (): Promise<void> => {
   try {
     const app = express();
@@ -55,8 +67,15 @@ const buildServer = async (): Promise<void> => {
     await createNetworkTrackerEventsService.createNetworkTrackerEvents();
     await sendNetworkTrackerEventsService.sendNetworkTrackerEvents();
     
-    setInterval(createNetworkTrackerEventsService.createNetworkTrackerEvents, NETWORK_TRACKER_CREATE_NETWORK_TRACKER_EVENTS_INTERVAL);
-    setInterval(sendNetworkTrackerEventsService.sendNetworkTrackerEvents, NETWORK_TRACKER_SEND_NETWORK_TRACKER_EVENTS_INTERVAL);
+    await createSequentialInterval(
+      createNetworkTrackerEventsService.createNetworkTrackerEvents, 
+      NETWORK_TRACKER_CREATE_NETWORK_TRACKER_EVENTS_INTERVAL
+    );
+    
+    await createSequentialInterval(
+      sendNetworkTrackerEventsService.sendNetworkTrackerEvents, 
+      NETWORK_TRACKER_SEND_NETWORK_TRACKER_EVENTS_INTERVAL
+    );
   } catch (error: unknown) {
     console.log(`Error | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Path: src/index.ts | Location: buildServer | Error: ${ error instanceof Error ? error.message : String(error) }`);
     process.exit(1);
