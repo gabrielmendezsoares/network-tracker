@@ -18,7 +18,7 @@ export const sendNetworkTrackerEvents = async (): Promise<void> => {
     await Promise.allSettled(
       networkTrackerEventList.forEach(
         async (networkTrackerEvent: INetworkTrackerEvent.INetworkTrackerEvent): Promise<void> => {
-          const networkTrackerHost = await prisma.network_tracker_hosts.findUnique({ where: { id: networkTrackerEvent.host_id } });
+          const networkTrackerHost = await prisma.network_tracker_hosts.findUnique({ where: { id: networkTrackerEvent.network_tracker_hosts_id } });
 
           if (networkTrackerHost) {
             const httpClientInstance = new HttpClientUtil.HttpClient();
