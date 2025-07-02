@@ -16,7 +16,7 @@ export const sendNetworkTrackerEvents = async (): Promise<void> => {
     const eventIdErrorList: number[] = [];
 
     await Promise.allSettled(
-      networkTrackerEventList.forEach(
+      networkTrackerEventList.map(
         async (networkTrackerEvent: INetworkTrackerEvent.INetworkTrackerEvent): Promise<void> => {
           const networkTrackerHost = await prisma.network_tracker_hosts.findUnique({ where: { id: networkTrackerEvent.network_tracker_hosts_id } });
 
@@ -57,10 +57,10 @@ export const sendNetworkTrackerEvents = async (): Promise<void> => {
                 auxiliary: zoneMap?.zoneCode,
                 code: networkTrackerEvent.code,
                 companyId: accountMap.companyId,
-                complement: `IP: ${ networkTrackerHost.ip }, Descrição: ${ networkTrackerHost.description }`,
+                complement: `IP: ${ networkTrackerHost.ip }, Local: ${ networkTrackerHost.description }`,
                 dateTime: networkTrackerEvent.created_at.toISOString().slice(0, 19).replace('T', ' ').replace(/-/g, '-'),
                 eventId: EVENT_ID,
-                eventLog: `IP: ${ networkTrackerHost.ip }, Descrição: ${ networkTrackerHost.description }`,
+                eventLog: `IP: ${ networkTrackerHost.ip }, Local: ${ networkTrackerHost.description }`,
                 partition: partitionMap.number,
                 protocolType: PROTOCOL_TYPE
               }

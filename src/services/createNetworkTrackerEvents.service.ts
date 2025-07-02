@@ -132,7 +132,7 @@ export const createNetworkTrackerEvents = async (): Promise<void> => {
                 await prisma.network_tracker_events.create(
                   {
                     data: {
-                      host_id: networkTrackerHost.id,
+                      network_tracker_hosts_id: networkTrackerHost.id,
                       code: eventDecisionMap.code!,
                       status: 'pending'
                     }
