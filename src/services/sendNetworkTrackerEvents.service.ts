@@ -41,15 +41,20 @@ export const sendNetworkTrackerEvents = async (): Promise<void> => {
               return;
             }
 
-            const zoneMapList = (await httpClientInstance.get<IZoneMap.IZoneMap[]>(`https://api.segware.com.br/v2/accounts/${ networkTrackerHost.account_id }/zones`)).data;
-            const zoneMap = zoneMapList.find((zoneMap: IZoneMap.IZoneMap): boolean => zoneMap.partition.id === Number(networkTrackerHost.partition_id));
+            let zoneMap: IZoneMap.IZoneMap | undefined;
+
+            if (networkTrackerHost.zone_id) {
+              const zoneMapList = (await httpClientInstance.get<IZoneMap.IZoneMap[]>(`https://api.segware.com.br/v2/accounts/${ networkTrackerHost.account_id }/zones`)).data;
+
+              zoneMap = zoneMapList.find((zoneMap: IZoneMap.IZoneMap): boolean => zoneMap.id === Number(networkTrackerHost.zone_id) && zoneMap.partition.id === partitionMap.id);
+            }
 
             eventIdSuccessList.push(networkTrackerEvent.id);
 
             eventPayloadMapList.push(
               {
                 account: accountMap.accountCode,
-                auxiliary: zoneMap.zoneCode || '100',
+                auxiliary: zoneMap?.zoneCode,
                 code: networkTrackerEvent.code,
                 companyId: accountMap.companyId,
                 complement: `IP: ${ networkTrackerHost.ip }, Descrição: ${ networkTrackerHost.description }`,
