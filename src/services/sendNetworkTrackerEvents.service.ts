@@ -16,9 +16,9 @@ export const sendNetworkTrackerEvents = async (): Promise<void> => {
     const eventIdErrorList: number[] = [];
 
     await Promise.allSettled(
-      networkTrackerEventList.forEach(
+      networkTrackerEventList.map(
         async (networkTrackerEvent: INetworkTrackerEvent.INetworkTrackerEvent): Promise<void> => {
-          const networkTrackerHost = await prisma.network_tracker_hosts.findUnique({ where: { id: networkTrackerEvent.host_id } });
+          const networkTrackerHost = await prisma.network_tracker_hosts.findUnique({ where: { id: networkTrackerEvent.network_tracker_hosts_id } });
 
           if (networkTrackerHost) {
             const httpClientInstance = new HttpClientUtil.HttpClient();
@@ -41,21 +41,26 @@ export const sendNetworkTrackerEvents = async (): Promise<void> => {
               return;
             }
 
-            const zoneMapList = (await httpClientInstance.get<IZoneMap.IZoneMap[]>(`https://api.segware.com.br/v2/accounts/${ networkTrackerHost.account_id }/zones`)).data;
-            const zoneMap = zoneMapList.find((zoneMap: IZoneMap.IZoneMap): boolean => zoneMap.partition.id === Number(networkTrackerHost.partition_id));
+            let zoneMap: IZoneMap.IZoneMap | undefined;
+
+            if (networkTrackerHost.zone_id) {
+              const zoneMapList = (await httpClientInstance.get<IZoneMap.IZoneMap[]>(`https://api.segware.com.br/v2/accounts/${ networkTrackerHost.account_id }/zones`)).data;
+
+              zoneMap = zoneMapList.find((zoneMap: IZoneMap.IZoneMap): boolean => zoneMap.id === Number(networkTrackerHost.zone_id) && zoneMap.partition.id === partitionMap.id);
+            }
 
             eventIdSuccessList.push(networkTrackerEvent.id);
 
             eventPayloadMapList.push(
               {
                 account: accountMap.accountCode,
-                auxiliary: zoneMap.zoneCode || '100',
+                auxiliary: zoneMap?.zoneCode,
                 code: networkTrackerEvent.code,
                 companyId: accountMap.companyId,
-                complement: `IP: ${ networkTrackerHost.ip }, Descrição: ${ networkTrackerHost.description }`,
+                complement: `IP: ${ networkTrackerHost.ip }, Local: ${ networkTrackerHost.description }`,
                 dateTime: networkTrackerEvent.created_at.toISOString().slice(0, 19).replace('T', ' ').replace(/-/g, '-'),
                 eventId: EVENT_ID,
-                eventLog: `IP: ${ networkTrackerHost.ip }, Descrição: ${ networkTrackerHost.description }`,
+                eventLog: `IP: ${ networkTrackerHost.ip }, Local: ${ networkTrackerHost.description }`,
                 partition: partitionMap.number,
                 protocolType: PROTOCOL_TYPE
               }

@@ -1,6 +1,7 @@
 import { IPartitionMap } from './index.js';
 
 export interface IZoneMap { 
-  zoneCode: string;
+  id: number;
   partition: IPartitionMap.IPartitionMap;
+  zoneCode: string;
 }

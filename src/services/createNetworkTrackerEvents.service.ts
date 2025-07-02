@@ -71,9 +71,9 @@ const shouldCreateEvent = async (networkTrackerHost: INetworkTrackerHost.INetwor
   
     if (!networkTrackerHost.is_alive && consecutiveSucesses >= CONSECUTIVE_SUCCESSES_THRESHOLD) {
       return {
-        shouldCreate: true,
         code: SUCCESS_CODE,
-        isAlive: true
+        isAlive: true,
+        shouldCreate: true
       };
     }
   } else {
@@ -99,9 +99,9 @@ const shouldCreateEvent = async (networkTrackerHost: INetworkTrackerHost.INetwor
 
     if (networkTrackerHost.is_alive && consecutiveFailures >= CONSECUTIVE_FAILURES_THRESHOLD) {
       return {
-        shouldCreate: true,
         code: FAILURE_CODE,
-        isAlive: false
+        isAlive: false,
+        shouldCreate: true
       };
     }
   }
@@ -132,7 +132,7 @@ export const createNetworkTrackerEvents = async (): Promise<void> => {
                 await prisma.network_tracker_events.create(
                   {
                     data: {
-                      host_id: networkTrackerHost.id,
+                      network_tracker_hosts_id: networkTrackerHost.id,
                       code: eventDecisionMap.code!,
                       status: 'pending'
                     }

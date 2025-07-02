@@ -1,8 +1,8 @@
 export interface IEventPayloadMap {
   account: string;
-  auxiliary: string;
+  auxiliary?: string;
   code: string;
-  companyId: string;
+  companyId: number;
   complement: string;
   dateTime: string;
   eventId: string;
