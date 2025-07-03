@@ -64,9 +64,6 @@ const buildServer = async (): Promise<void> => {
     
     startServer(serverInstance as Express);
 
-    await createNetworkTrackerEventsService.createNetworkTrackerEvents();
-    await sendNetworkTrackerEventsService.sendNetworkTrackerEvents();
-    
     await createSequentialInterval(
       createNetworkTrackerEventsService.createNetworkTrackerEvents, 
       NETWORK_TRACKER_CREATE_NETWORK_TRACKER_EVENTS_INTERVAL
