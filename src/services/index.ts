@@ -1,3 +1,2 @@
-export * as appService from './app.service.js';
-export * as createNetworkTrackerEventsService from './createNetworkTrackerEvents.service.js';
-export * as sendNetworkTrackerEventsService from './sendNetworkTrackerEvents.service.js';
+export * as createSigmaCloudEventsService from './createSigmaCloudEvents.js';
+export * as getHealthService from './getHealth.service.js';
