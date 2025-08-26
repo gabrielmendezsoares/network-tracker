@@ -1,8 +1,5 @@
 export * as IAccountMap from './IAccountMap.js';
 export * as IEventDecisionMap from './IEventDecisionMap.js';
-export * as IEventPayloadMap from './IEventPayloadMap.js';
-export * as INetworkTrackerEvent from './INetworkTrackerEvent.js';
-export * as INetworkTrackerHost from './INetworkTrackerHost.js';
 export * as IPartitionMap from './IPartitionMap.js';
 export * as IResponse from './IResponse.js';
 export * as IResponseData from './IResponseData.js';
