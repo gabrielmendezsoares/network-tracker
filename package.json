@@ -1,7 +1,7 @@
 {
   "name": "network-tracker",
   "private": true,
-  "version": "2.0.2",
+  "version": "2.0.3",
   "type": "module",
   "license": "MIT",
   "scripts": {
